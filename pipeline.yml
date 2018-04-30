@@ -1,0 +1,59 @@
+---
+resources:
+  - name: git-repository
+    type: git
+    source: 
+      uri: https://github.com/Habi86/MMT-Concourse.git
+
+jobs: 
+  - name: lint
+    plan: 
+    - get: git-repository
+      trigger: true
+    - task: lint
+      config: 
+        platform: linux
+
+        image_resource: 
+          type: docker-image
+          source:
+            repository: ruby
+            tag: '2.5'
+
+        inputs: 
+          - name: git-repository
+
+        run: 
+          path: echo
+          args: 
+            - 'hello world'
+
+  - name: deploy
+    plan:
+      - get: git-repository
+        passed: [lint]
+        trigger: true
+      - task: deploy
+        config: 
+          platform: linux
+
+          image_resource: 
+            type: concourse/bash-cli
+            source:
+              repository: ruby
+
+          inputs: 
+            - name: git-repository
+
+          params:
+            HEROKU_MAIL: 
+            HEROKU_TOKEN: 
+
+          run: 
+            path: sh
+            dir: git-repository
+            args: 
+              - 'exc'
+              - |
+                 'git push' https://git.heroku.com/mmt-concourse-test.git
+
